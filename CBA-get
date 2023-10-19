@@ -1,0 +1,19 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "CBA-get",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "Timestamp",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "Codes",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
