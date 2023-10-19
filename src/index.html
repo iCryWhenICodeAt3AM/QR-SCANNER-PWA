@@ -1,13 +1,177 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>PwaApp</title>
-  <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
-</head>
-<body>
-  <app-root></app-root>
-</body>
+<!DOCTYPE html>
+<html lang="en" data-critters-container>
+    <head>
+        <meta charset="utf-8">
+        <title>GDSC MASTER QR</title>
+        <base href="/">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="icon" type="image/x-icon" href="favicon.ico">
+        <link rel="manifest" href="manifest.webmanifest">
+        <meta name="theme-color" content="#1976d2">
+
+
+        <!-- scanapp.org -->
+            <script src="assets/scripts/mebjas-html5-qrcode-bd41bf1/minified/html5-qrcode.min.js" type="text/javascript"></script>
+            
+            <!-- bootstrap -->
+            <link href="assets/scripts/bootstrap-5.3.2-dist/css/bootstrap.min.css" rel="stylesheet"
+                integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
+
+
+        <style>
+            /* Add CSS for positioning */
+            body {
+                height: 100vh;
+                margin: 0;
+            }
+
+            #liveAlertPlaceholder {
+                margin-left: 80px;
+                margin-right: 80px;
+                position: absolute;
+                top: 240px;
+                left: 0;
+                right: 0;
+                z-index: 1000;
+                /* Ensure the alerts are on top */
+            }
+
+            #reader {
+                z-index: 1;
+            }
+        </style>
+        </head>
+        <body>
+        <div id="liveAlertPlaceholder"></div>
+        <div id="reader" width="600px" height="auto"></div>
+
+        <input type="file" id="fileInput" style="display: none;">
+        <button id="chooseFileButton">Save File</button>
+
+        <script type="text/javascript">
+            document.addEventListener('DOMContentLoaded', async function () {
+            let scannedCodes = new Map(); // Use a Map to store scanned codes and their timestamps
+
+            // Initialize the file input
+            const fileInput = document.getElementById('fileInput');
+            const chooseFileButton = document.getElementById('chooseFileButton');
+
+            // Handle file input change
+            fileInput.addEventListener('change', async () => {
+                const file = fileInput.files[0];
+                if (file) {
+                saveAllToFile(file.name);
+                }
+            });
+
+            // Handle button click to choose a file
+            chooseFileButton.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            function onScanSuccess(decodedText, decodedResult) {
+                console.log(`Code matched = ${decodedText}`, decodedResult);
+
+                // Get the current date and time
+                const currentTime = new Date();
+                const timestamp = formatTimestamp(currentTime);
+
+                // Check for duplicate
+                if (!scannedCodes.has(decodedText)) {
+                // Add the scanned code and its timestamp to the Map
+                scannedCodes.set(decodedText, timestamp);
+                console.log("Current Save File: ", scannedCodes); //print saved codes
+
+                // Display alert
+                appendAlert(`${decodedText} scanned at ${timestamp}`, 'info');
+                } else {
+                // Display alert for duplicate
+                appendAlert(`${decodedText} already scanned at ${timestamp}`, 'warning');
+                }
+            }
+
+            function onScanFailure(error) {
+                console.warn(`Code scan error = ${error}`);
+            }
+
+            let html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader",
+                {
+                fps: 10,
+                qrbox: { width: 500, height: 500 },
+                },
+                /* verbose= */ false
+            );
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+
+            function saveAllToFile(filename) {
+                // Convert the Map to an array and join with line breaks
+                const contentToSave = [...scannedCodes].map(([code, timestamp]) => {
+                return `${timestamp} - ${code}`;
+                }).join('\n');
+
+                // Create a Blob from the content
+                const blob = new Blob([contentToSave], { type: 'text/plain' });
+
+                // Create an object URL for the Blob
+                const url = URL.createObjectURL(blob);
+
+                // Create a link element and trigger a click to download the file
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                // Revoke the object URL to free up resources
+                URL.revokeObjectURL(url);
+
+                // Clear the Map of scanned codes
+                scannedCodes.clear();
+            }
+
+            function appendAlert(message, type) {
+                const alertPlaceholder = document.getElementById('liveAlertPlaceholder');
+
+                const wrapper = document.createElement('div');
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type} alert-dismissible`;
+                alertDiv.setAttribute('role', 'alert');
+                alertDiv.innerHTML = `
+                <div>${message}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+
+                wrapper.appendChild(alertDiv);
+                alertPlaceholder.appendChild(wrapper);
+
+                // Automatically dismiss the alert after 3 seconds (adjust as needed)
+                setTimeout(() => {
+                alertDiv.remove();
+                }, 2000);
+            }
+
+            function formatTimestamp(date) {
+                const year = date.getFullYear();
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const day = date.getDate().toString().padStart(2, '0');
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                const seconds = date.getSeconds().toString().padStart(2, '0');
+
+                return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            }
+
+            });
+        </script>
+
+        <script src="assets/scripts/bootstrap-5.3.2-dist/js/bootstrap.bundle.min.js"
+                integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm"
+                crossorigin="anonymous"></script>
+
+        <!-- <script src="runtime.2f516515794a0aa2.js" type="module"></script>
+        <script src="polyfills.88f156e08a405119.js" type="module"></script>
+        <script src="main.f3b374f0c0e0cdb6.js" type="module"></script> -->
+    </body>
 </html>
